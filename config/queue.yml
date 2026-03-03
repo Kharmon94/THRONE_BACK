@@ -1,0 +1,2 @@
+production:
+  concurrency: <%= ENV.fetch("JOB_CONCURRENCY", 1).to_i %>

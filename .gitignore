@@ -1,0 +1,10 @@
+/log/*
+/tmp/*
+!/log/.keep
+!/tmp/.keep
+/storage/*
+!/storage/.keep
+*.sqlite3
+*.sqlite3-*
+.env
+.env.*
