@@ -17,4 +17,4 @@ RUN bundle exec rails assets:precompile 2>/dev/null || true
 
 EXPOSE 3000
 
-CMD ["bundle", "exec", "puma", "-C", "config/puma.rb"]
+CMD ["sh", "-c", "bundle exec rails db:migrate && bundle exec rails db:seed && exec bundle exec puma -C config/puma.rb"]
