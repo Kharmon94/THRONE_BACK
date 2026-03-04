@@ -1,6 +1,10 @@
 require "active_support/core_ext/integer/time"
 
 Rails.application.configure do
+  # Use SECRET_KEY_BASE env var for containerized deployments (e.g. Railway).
+  # Generate with: rails secret
+  config.secret_key_base = ENV["SECRET_KEY_BASE"] if ENV["SECRET_KEY_BASE"].present?
+
   config.enable_reloading = false
   config.eager_load = true
   config.consider_all_requests_local = false

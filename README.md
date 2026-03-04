@@ -22,6 +22,7 @@ Rails 8 API for the Throne portfolio app.
 
 - `DATABASE_URL` - Production PostgreSQL URL
 - `FRONTEND_ORIGIN` - CORS allowed origin
+- `SECRET_KEY_BASE` - **Required in production.** Generate with `rails secret`, then set in your hosting env (e.g. Railway Variables).
 - `JWT_SECRET` - Optional JWT signing secret (defaults to secret_key_base)
 - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_BUCKET` - Production S3
-- `RAILS_MASTER_KEY` - For production credentials
+- `RAILS_MASTER_KEY` - Alternative to SECRET_KEY_BASE (for credentials-based setup)
