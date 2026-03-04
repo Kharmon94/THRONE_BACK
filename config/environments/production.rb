@@ -19,7 +19,8 @@ Rails.application.configure do
   config.active_record.attributes_for_inspect = [:id]
   config.active_storage.service = :amazon
   config.cache_store = ENV["REDIS_URL"].present? ? [:redis_cache_store, { url: ENV["REDIS_URL"] }] : :memory_store
-  config.active_job.queue_adapter = :solid_queue
+  # Use :async (in-process) - no external queue needed. Add solid_queue gem if you need a real queue.
+  config.active_job.queue_adapter = :async
   config.action_mailer.perform_caching = false
   config.action_mailer.raise_delivery_errors = false
   Rails.application.routes.default_url_options = { host: ENV.fetch("API_HOST", "localhost"), protocol: "https" }
