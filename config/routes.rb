@@ -3,7 +3,7 @@ Rails.application.routes.draw do
 
   get "*path",
       to: "spa#index",
-      constraints: ->(req) { !req.path.start_with?("/api") && req.path != "/up" },
+      constraints: ->(req) { !req.path.start_with?("/api") && !req.path.start_with?("/rails") && req.path != "/up" },
       format: false
 
   namespace :api do
