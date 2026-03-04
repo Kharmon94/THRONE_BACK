@@ -1,6 +1,11 @@
 Rails.application.routes.draw do
   get "up" => "health#show"
 
+  get "*path",
+      to: "spa#index",
+      constraints: ->(req) { !req.path.start_with?("/api") && req.path != "/up" },
+      format: false
+
   namespace :api do
     namespace :v1 do
       post "auth/sign_in", to: "auth#sign_in"
