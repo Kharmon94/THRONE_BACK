@@ -1,10 +1,13 @@
-# Create admin user if none exists
-if User.count.zero?
+# Seed admin only when we have credentials
+email = ENV["ADMIN_SEED_EMAIL"].presence || "admin@throne.local"
+password = ENV["ADMIN_SEED_PASSWORD"].presence || "password123"
+
+if User.count.zero? && password.present?
   User.create!(
-    email: "admin@throne.local",
-    password: "password123",
-    password_confirmation: "password123",
+    email: email,
+    password: password,
+    password_confirmation: password,
     admin: true
   )
-  puts "Created default admin user: admin@throne.local / password123"
+  puts "Created admin user: #{email}"
 end
