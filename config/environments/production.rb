@@ -17,7 +17,8 @@ Rails.application.configure do
   config.active_support.report_deprecations = false
   config.active_record.dump_schema_after_migration = false
   config.active_record.attributes_for_inspect = [:id]
-  config.active_storage.service = :amazon
+  # Use S3 when AWS_BUCKET is set; otherwise use local (ephemeral on Railway—add AWS vars for persistent storage).
+  config.active_storage.service = ENV["AWS_BUCKET"].present? ? :amazon : :local
   config.cache_store = ENV["REDIS_URL"].present? ? [:redis_cache_store, { url: ENV["REDIS_URL"] }] : :memory_store
   # Use :async (in-process) - no external queue needed. Add solid_queue gem if you need a real queue.
   config.active_job.queue_adapter = :async
