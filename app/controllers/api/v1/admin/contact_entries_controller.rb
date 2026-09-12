@@ -3,12 +3,14 @@ module Api
     module Admin
       class ContactEntriesController < BaseController
         def index
+          authorize! :read, ContactEntry
           entries = ContactEntry.order(created_at: :desc)
           render json: { contact_entries: entries.map { |e| contact_entry_json(e) } }
         end
 
         def destroy
           entry = ContactEntry.find(params[:id])
+          authorize! :destroy, entry
           entry.destroy
           head :no_content
         rescue ActiveRecord::RecordNotFound

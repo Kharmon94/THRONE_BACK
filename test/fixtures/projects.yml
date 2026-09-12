@@ -1,0 +1,26 @@
+published:
+  title: Published Project
+  description: Live work
+  category: Web
+  featured: true
+  status: published
+  position: 0
+  user: admin
+
+draft:
+  title: Draft Project
+  description: Not ready
+  category: Web
+  featured: false
+  status: draft
+  position: 1
+  user: admin
+
+second_published:
+  title: Second Published
+  description: Another live piece
+  category: Mobile
+  featured: false
+  status: published
+  position: 2
+  user: admin

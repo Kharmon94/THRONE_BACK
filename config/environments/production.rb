@@ -17,8 +17,17 @@ Rails.application.configure do
   config.active_support.report_deprecations = false
   config.active_record.dump_schema_after_migration = false
   config.active_record.attributes_for_inspect = [:id]
-  # Use S3 when AWS_BUCKET is set; otherwise use local (ephemeral on Railway—add AWS vars for persistent storage).
-  config.active_storage.service = ENV["AWS_BUCKET"].present? ? :amazon : :local
+  # Use S3 when AWS_BUCKET is set; otherwise use local (ephemeral on Railway).
+  if ENV["AWS_BUCKET"].present?
+    config.active_storage.service = :amazon
+  else
+    config.active_storage.service = :local
+    warn(
+      "[Throne] AWS_BUCKET is not set — Active Storage is using local disk. " \
+      "Uploads will not persist across Railway deploys. Set AWS_ACCESS_KEY_ID, " \
+      "AWS_SECRET_ACCESS_KEY, AWS_REGION, and AWS_BUCKET for durable media."
+    )
+  end
   config.cache_store = ENV["REDIS_URL"].present? ? [:redis_cache_store, { url: ENV["REDIS_URL"] }] : :memory_store
   # Use :async (in-process) - no external queue needed. Add solid_queue gem if you need a real queue.
   config.active_job.queue_adapter = :async

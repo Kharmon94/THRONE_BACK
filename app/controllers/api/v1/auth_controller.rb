@@ -5,7 +5,7 @@ module Api
         user = User.find_for_database_authentication(email: params[:email] || params.dig(:user, :email))
         password = params[:password] || params.dig(:user, :password)
         if user&.valid_password?(password)
-          if user.respond_to?(:suspended?) && user.suspended?
+          if user.suspended?
             render json: { error: "Account suspended" }, status: :unauthorized
             return
           end
@@ -17,6 +17,11 @@ module Api
       end
 
       def sign_up
+        unless public_sign_up_allowed?
+          render json: { error: "Sign up is disabled" }, status: :forbidden
+          return
+        end
+
         user = User.new(sign_up_params)
         user.admin = true if User.count.zero?
         if user.save
@@ -33,6 +38,10 @@ module Api
       end
 
       private
+
+      def public_sign_up_allowed?
+        ActiveModel::Type::Boolean.new.cast(ENV["ALLOW_PUBLIC_SIGN_UP"]) || User.count.zero?
+      end
 
       def sign_up_params
         params.require(:user).permit(:email, :password, :password_confirmation)

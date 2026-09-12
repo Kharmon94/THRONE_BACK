@@ -5,17 +5,26 @@ module Api
         before_action :set_project, only: [:show, :update, :destroy]
 
         def index
+          authorize! :read, Project
           projects = Project.ordered
           render json: { projects: projects.map { |p| project_json(p) } }
         end
 
         def show
+          authorize! :read, @project
           render json: { project: project_json(@project) }
         end
 
         def create
+          authorize! :create, Project
           project = Project.new(project_params.except(:image_url))
-          attach_image_from_url(project, project_params[:image_url]) if project_params[:image_url].present? && project_params[:image].blank?
+          project.user = current_user
+          if project_params[:image_url].present? && project_params[:image].blank?
+            unless attach_image_from_url(project, project_params[:image_url])
+              render json: { errors: project.errors.full_messages }, status: :unprocessable_entity
+              return
+            end
+          end
           if project.save
             render json: { project: project_json(project) }, status: :created
           else
@@ -24,8 +33,14 @@ module Api
         end
 
         def update
+          authorize! :update, @project
           @project.assign_attributes(project_params.except(:image_url))
-          attach_image_from_url(@project, project_params[:image_url]) if project_params[:image_url].present? && project_params[:image].blank?
+          if project_params[:image_url].present? && project_params[:image].blank?
+            unless attach_image_from_url(@project, project_params[:image_url])
+              render json: { errors: @project.errors.full_messages }, status: :unprocessable_entity
+              return
+            end
+          end
           if @project.save
             render json: { project: project_json(@project) }
           else
@@ -34,8 +49,27 @@ module Api
         end
 
         def destroy
+          authorize! :destroy, @project
           @project.destroy
           head :no_content
+        end
+
+        def reorder
+          authorize! :update, Project
+          ids = Array(params[:ids]).map(&:to_i).reject(&:zero?)
+          if ids.empty?
+            render json: { error: "ids required" }, status: :unprocessable_entity
+            return
+          end
+
+          Project.transaction do
+            ids.each_with_index do |id, index|
+              Project.where(id: id).update_all(position: index)
+            end
+          end
+
+          projects = Project.ordered
+          render json: { projects: projects.map { |p| project_json(p) } }
         end
 
         private
@@ -53,14 +87,20 @@ module Api
         end
 
         def attach_image_from_url(project, url)
-          return if url.blank?
-          require "open-uri"
+          return true if url.blank?
+
           project.image.purge if project.image.attached?
-          io = URI.open(url, read_timeout: 10, ssl_verify_mode: OpenSSL::SSL::VERIFY_PEER)
-          filename = File.basename(URI.parse(url).path).presence || "image.jpg"
+          io, filename = SafeRemoteImage.open(url)
           project.image.attach(io: io, filename: filename)
-        rescue OpenURI::HTTPError, URI::InvalidURIError, Errno::ECONNREFUSED => e
+          true
+        rescue SafeRemoteImage::UnsafeUrlError => e
+          Rails.logger.warn("Blocked unsafe image URL: #{e.message}")
+          project.errors.add(:image_url, "is not allowed")
+          false
+        rescue Net::OpenTimeout, Net::ReadTimeout, Errno::ECONNREFUSED, SocketError, OpenSSL::SSL::SSLError => e
           Rails.logger.warn("Failed to attach image from URL: #{e.message}")
+          project.errors.add(:image_url, "could not be downloaded")
+          false
         end
 
         def project_json(project)

@@ -16,6 +16,9 @@ module Authenticatable
     payload = JwtService.decode(token)
     return @current_user = nil unless payload && payload[:user_id]
 
-    @current_user = User.find_by(id: payload[:user_id])
+    user = User.find_by(id: payload[:user_id])
+    return @current_user = nil if user.nil? || user.suspended?
+
+    @current_user = user
   end
 end

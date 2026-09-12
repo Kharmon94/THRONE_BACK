@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_03_03_000003) do
+ActiveRecord::Schema[8.0].define(version: 2025_03_03_100001) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -38,6 +38,17 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_03_000003) do
     t.string "variation_digest", null: false
     t.datetime "created_at", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "contact_entries", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "email", null: false
+    t.string "company"
+    t.string "budget"
+    t.text "message", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_contact_entries_on_created_at"
   end
 
   create_table "projects", force: :cascade do |t|

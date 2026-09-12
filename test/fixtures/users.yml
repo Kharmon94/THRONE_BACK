@@ -1,0 +1,17 @@
+admin:
+  email: admin@throne.test
+  encrypted_password: <%= Devise::Encryptor.digest(User, "password123") %>
+  admin: true
+  suspended: false
+
+member:
+  email: member@throne.test
+  encrypted_password: <%= Devise::Encryptor.digest(User, "password123") %>
+  admin: false
+  suspended: false
+
+suspended:
+  email: suspended@throne.test
+  encrypted_password: <%= Devise::Encryptor.digest(User, "password123") %>
+  admin: false
+  suspended: true
