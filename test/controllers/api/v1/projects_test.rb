@@ -60,4 +60,53 @@ class ProjectsRequestTest < ActionDispatch::IntegrationTest
 
     assert_response :forbidden
   end
+
+  test "admin update preserves image when resending existing image_url" do
+    project = projects(:published)
+    project.image.attach(
+      io: File.open(file_fixture("test_image.png")),
+      filename: "test_image.png",
+      content_type: "image/png"
+    )
+    assert project.image.attached?
+
+    existing_url = Rails.application.routes.url_helpers.rails_blob_path(project.image, only_path: true)
+
+    patch "/api/v1/admin/projects/#{project.id}",
+          params: {
+            project: {
+              title: "Updated Title",
+              image_url: existing_url
+            }
+          },
+          headers: auth_headers(users(:admin)),
+          as: :json
+
+    assert_response :success
+    project.reload
+    assert_equal "Updated Title", project.title
+    assert project.image.attached?, "existing image should not be purged on edit"
+    body = JSON.parse(response.body)
+    assert body.dig("project", "image").present?
+  end
+
+  test "admin update without image_url leaves attachment alone" do
+    project = projects(:published)
+    project.image.attach(
+      io: File.open(file_fixture("test_image.png")),
+      filename: "test_image.png",
+      content_type: "image/png"
+    )
+    blob_id = project.image.blob.id
+
+    patch "/api/v1/admin/projects/#{project.id}",
+          params: { project: { description: "Edited description only" } },
+          headers: auth_headers(users(:admin)),
+          as: :json
+
+    assert_response :success
+    project.reload
+    assert project.image.attached?
+    assert_equal blob_id, project.image.blob.id
+  end
 end
