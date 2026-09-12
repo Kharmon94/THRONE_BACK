@@ -6,6 +6,7 @@ class AppointmentsRequestTest < ActionDispatch::IntegrationTest
   setup do
     AppointmentSetting.delete_all
     Appointment.delete_all
+    AppointmentDateOverride.delete_all
     @settings = AppointmentSetting.seed_from_yaml!
     # Make slots immediately bookable in tests.
     @settings.update!(lead_time_hours: 0, bookable_days_ahead: 14)
@@ -196,6 +197,53 @@ class AppointmentsRequestTest < ActionDispatch::IntegrationTest
 
     assert_difference("Appointment.count", -1) do
       delete "/api/v1/admin/appointments/#{appointment.id}", headers: auth_headers(admin)
+    end
+    assert_response :no_content
+  end
+
+  test "admin date overrides CRUD and affect public slots" do
+    admin = users(:admin)
+
+    assert_difference("AppointmentDateOverride.count", 1) do
+      post "/api/v1/admin/appointment_date_overrides",
+           headers: auth_headers(admin),
+           params: {
+             appointment_date_override: {
+               date: "2026-03-16",
+               enabled: true,
+               start: "14:00",
+               end: "15:00"
+             }
+           },
+           as: :json
+    end
+    assert_response :created
+    override_id = JSON.parse(response.body)["appointment_date_override"]["id"]
+
+    from = Time.find_zone!("America/New_York").local(2026, 3, 16, 0, 0, 0).utc.iso8601
+    to = Time.find_zone!("America/New_York").local(2026, 3, 17, 0, 0, 0).utc.iso8601
+    get "/api/v1/appointments/slots", params: { from: from, to: to }
+    assert_response :success
+    hours = JSON.parse(response.body)["slots"].map { |s| Time.iso8601(s).in_time_zone("America/New_York").hour }
+    assert_equal [14, 14], hours
+
+    patch "/api/v1/admin/appointment_date_overrides/#{override_id}",
+          headers: auth_headers(admin),
+          params: { appointment_date_override: { enabled: false } },
+          as: :json
+    assert_response :success
+
+    get "/api/v1/appointments/slots", params: { from: from, to: to }
+    assert_empty JSON.parse(response.body)["slots"]
+
+    get "/api/v1/admin/appointment_date_overrides",
+        headers: auth_headers(admin),
+        params: { from: "2026-03-01", to: "2026-03-31" }
+    assert_response :success
+    assert_equal 1, JSON.parse(response.body)["appointment_date_overrides"].size
+
+    assert_difference("AppointmentDateOverride.count", -1) do
+      delete "/api/v1/admin/appointment_date_overrides/#{override_id}", headers: auth_headers(admin)
     end
     assert_response :no_content
   end

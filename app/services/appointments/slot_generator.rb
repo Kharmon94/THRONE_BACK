@@ -32,6 +32,7 @@ module Appointments
 
       booked = blocking_appointments(window_start, window_end)
       duration = @settings.slot_duration_minutes.minutes
+      @overrides_by_date = overrides_for_window(window_start, window_end)
       slots = []
 
       each_local_day(window_start, window_end) do |local_date|
@@ -55,6 +56,7 @@ module Appointments
 
       slots
     end
+
 
     def available?(starts_at)
       target = starts_at.to_time.utc
@@ -84,7 +86,22 @@ module Appointments
       (local_start..local_end).each { |date| yield date }
     end
 
+    def overrides_for_window(window_start, window_end)
+      local_start = @zone.at(window_start).to_date
+      local_end = @zone.at(window_end - 1.second).to_date
+      AppointmentDateOverride.where(date: local_start..local_end).index_by(&:date)
+    end
+
     def day_hours_for(local_date)
+      override = @overrides_by_date&.[](local_date)
+      if override
+        return {
+          "enabled" => override.enabled,
+          "start" => override.start,
+          "end" => override.end
+        }
+      end
+
       key = WEEKDAY_KEYS.fetch(local_date.wday)
       raw = @settings.weekly_hours[key] || @settings.weekly_hours[key.to_sym] || {}
       raw.is_a?(Hash) ? raw.stringify_keys : {}

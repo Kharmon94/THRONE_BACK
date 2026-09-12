@@ -27,7 +27,9 @@ Rails.application.routes.draw do
           end
         end
         resource :appointment_settings, only: [:show, :update]
+        resources :appointment_date_overrides, only: [:index, :create, :update, :destroy]
       end
+
     end
   end
 
