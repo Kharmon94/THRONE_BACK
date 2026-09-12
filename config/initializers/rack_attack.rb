@@ -1,13 +1,8 @@
 # frozen_string_literal: true
 
 class Rack::Attack
-  # Memory store locally / in tests. Production uses Rails.cache when Redis is configured.
-  Rack::Attack.cache.store =
-    if ENV["REDIS_URL"].present?
-      Rails.cache
-    else
-      ActiveSupport::Cache::MemoryStore.new
-    end
+  # Per-process memory store is fine for a single-replica portfolio.
+  Rack::Attack.cache.store = ActiveSupport::Cache::MemoryStore.new
 
   safelist("allow health checks") do |req|
     req.path == "/up"

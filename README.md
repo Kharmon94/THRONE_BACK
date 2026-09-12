@@ -35,7 +35,6 @@ bundle exec rails test
 - `ADMIN_SEED_EMAIL` / `ADMIN_SEED_PASSWORD` - Seed admin (`ADMIN_SEED_PASSWORD` required in production)
 - `ALLOW_PUBLIC_SIGN_UP` - Optional; when `true`, allows registration after the first user exists (default: only bootstrap when User.count is zero)
 - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_BUCKET` - **Required for durable media on Railway.** Without these, uploads use local disk and are lost on redeploy.
-- `REDIS_URL` - Optional Redis for cache + rack-attack (falls back to memory store)
 - `RAILS_MASTER_KEY` - Alternative to SECRET_KEY_BASE (for credentials-based setup)
 
 ## Railway checklist (API service)

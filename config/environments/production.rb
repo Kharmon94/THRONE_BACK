@@ -28,7 +28,8 @@ Rails.application.configure do
       "AWS_SECRET_ACCESS_KEY, AWS_REGION, and AWS_BUCKET for durable media."
     )
   end
-  config.cache_store = ENV["REDIS_URL"].present? ? [:redis_cache_store, { url: ENV["REDIS_URL"] }] : :memory_store
+  # In-process cache — enough for a single-replica portfolio API.
+  config.cache_store = :memory_store
   # Use :async (in-process) - no external queue needed. Add solid_queue gem if you need a real queue.
   config.active_job.queue_adapter = :async
   config.action_mailer.perform_caching = false
