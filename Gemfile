@@ -25,3 +25,5 @@ end
 gem "rack-attack", "~> 6.8"
 
 gem "minitest", "~> 5.25", groups: [:development, :test]
+
+gem "redis", ">= 4.0.1"
