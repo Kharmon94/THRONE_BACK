@@ -33,6 +33,8 @@ Rails.application.configure do
   # Use :async (in-process) - no external queue needed. Add solid_queue gem if you need a real queue.
   config.active_job.queue_adapter = :async
   config.action_mailer.perform_caching = false
-  config.action_mailer.raise_delivery_errors = false
+  config.action_mailer.delivery_method = :resend
+  config.action_mailer.perform_deliveries = true
+  config.action_mailer.raise_delivery_errors = true
   Rails.application.routes.default_url_options = { host: ENV.fetch("API_HOST", "localhost"), protocol: "https" }
 end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_03_03_100001) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_12_000001) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -40,15 +40,32 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_03_100001) do
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
-  create_table "contact_entries", force: :cascade do |t|
+  create_table "appointment_settings", force: :cascade do |t|
+    t.string "timezone", default: "America/New_York", null: false
+    t.integer "slot_duration_minutes", default: 30, null: false
+    t.integer "lead_time_hours", default: 24, null: false
+    t.integer "bookable_days_ahead", default: 14, null: false
+    t.json "weekly_hours", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "appointments", force: :cascade do |t|
     t.string "name", null: false
     t.string "email", null: false
     t.string "company"
-    t.string "budget"
-    t.text "message", null: false
+    t.text "notes"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["created_at"], name: "index_contact_entries_on_created_at"
+    t.datetime "starts_at", null: false
+    t.integer "duration_minutes", default: 30, null: false
+    t.string "status", default: "pending", null: false
+    t.string "reschedule_token"
+    t.datetime "reschedule_token_expires_at"
+    t.index ["created_at"], name: "index_appointments_on_created_at"
+    t.index ["reschedule_token"], name: "index_appointments_on_reschedule_token", unique: true
+    t.index ["starts_at"], name: "index_appointments_on_starts_at"
+    t.index ["status"], name: "index_appointments_on_status"
   end
 
   create_table "projects", force: :cascade do |t|

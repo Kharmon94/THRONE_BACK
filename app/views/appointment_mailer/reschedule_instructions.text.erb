@@ -1,0 +1,12 @@
+Hi <%= @appointment.name %>,
+
+Please use the link below to pick a new time for your appointment
+(currently scheduled for <%= @appointment.starts_at.utc.strftime("%B %-d, %Y at %H:%M UTC") %>).
+
+<%= @reschedule_url %>
+
+<% if @expires_at.present? %>
+This link expires on <%= @expires_at.utc.strftime("%B %-d, %Y at %H:%M UTC") %>.
+<% end %>
+
+— Throne

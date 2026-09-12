@@ -1,0 +1,34 @@
+# Defaults for appointment_settings singleton (seeded once; runtime reads DB).
+timezone: America/New_York
+slot_duration_minutes: 30
+lead_time_hours: 24
+bookable_days_ahead: 14
+weekly_hours:
+  mon:
+    enabled: true
+    start: "10:00"
+    end: "16:00"
+  tue:
+    enabled: true
+    start: "10:00"
+    end: "16:00"
+  wed:
+    enabled: true
+    start: "10:00"
+    end: "16:00"
+  thu:
+    enabled: true
+    start: "10:00"
+    end: "16:00"
+  fri:
+    enabled: true
+    start: "10:00"
+    end: "16:00"
+  sat:
+    enabled: false
+    start: "10:00"
+    end: "16:00"
+  sun:
+    enabled: false
+    start: "10:00"
+    end: "16:00"

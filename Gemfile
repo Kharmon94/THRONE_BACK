@@ -23,5 +23,6 @@ group :production do
 end
 
 gem "rack-attack", "~> 6.8"
+gem "resend"
 
 gem "minitest", "~> 5.25", groups: [:development, :test]

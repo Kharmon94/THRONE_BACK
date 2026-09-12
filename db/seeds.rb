@@ -24,3 +24,6 @@ if password.present?
     puts "Created admin user: #{email}"
   end
 end
+
+settings = AppointmentSetting.instance
+puts "Appointment settings ready (timezone=#{settings.timezone})"

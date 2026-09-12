@@ -22,6 +22,13 @@ Rails.application.configure do
   Rails.application.routes.default_url_options = { host: "localhost", port: 3000 }
   config.action_mailer.raise_delivery_errors = false
   config.action_mailer.perform_caching = false
+  # Use :test locally unless RESEND_API_KEY is set (then deliver via Resend).
+  if ENV["RESEND_API_KEY"].present?
+    config.action_mailer.delivery_method = :resend
+    config.action_mailer.perform_deliveries = true
+  else
+    config.action_mailer.delivery_method = :test
+  end
   config.active_support.deprecation = :log
   config.active_support.disallowed_deprecation = :raise
   config.active_support.disallowed_deprecation_warnings = []

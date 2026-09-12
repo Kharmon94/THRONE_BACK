@@ -16,8 +16,8 @@ class Rack::Attack
     req.ip if req.path == "/api/v1/auth/sign_up" && req.post?
   end
 
-  throttle("contact/create", limit: 5, period: 1.hour) do |req|
-    req.ip if req.path == "/api/v1/contact" && req.post?
+  throttle("appointments/create", limit: 5, period: 1.hour) do |req|
+    req.ip if req.path == "/api/v1/appointments" && req.post?
   end
 
   self.throttled_responder = lambda do |_request|

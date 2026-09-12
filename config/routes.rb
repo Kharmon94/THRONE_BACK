@@ -9,7 +9,11 @@ Rails.application.routes.draw do
 
       get "projects", to: "projects#index"
       get "projects/:id", to: "projects#show"
-      post "contact", to: "contact#create"
+
+      get "appointments/slots", to: "appointments#slots"
+      post "appointments", to: "appointments#create"
+      get "appointments/reschedule/:token", to: "appointments#show_reschedule"
+      patch "appointments/reschedule/:token", to: "appointments#update_reschedule"
 
       namespace :admin do
         resources :projects do
@@ -17,7 +21,12 @@ Rails.application.routes.draw do
             patch :reorder
           end
         end
-        resources :contact_entries, only: [:index, :destroy]
+        resources :appointments, only: [:index, :update, :destroy] do
+          member do
+            post :reschedule
+          end
+        end
+        resource :appointment_settings, only: [:show, :update]
       end
     end
   end
