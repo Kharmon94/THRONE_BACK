@@ -2,7 +2,7 @@
 
 <p>
   Please use the link below to pick a new time for your appointment
-  (currently scheduled for <%= @appointment.starts_at.utc.strftime("%B %-d, %Y at %H:%M UTC") %>).
+  (currently scheduled for <%= format_in_business_zone(@appointment.starts_at) %>).
 </p>
 
 <p>
@@ -10,7 +10,7 @@
 </p>
 
 <% if @expires_at.present? %>
-  <p>This link expires on <%= @expires_at.utc.strftime("%B %-d, %Y at %H:%M UTC") %>.</p>
+  <p>This link expires on <%= format_in_business_zone(@expires_at) %>.</p>
 <% end %>
 
-<p>— Throne</p>
+<p>— Throne Technology</p>

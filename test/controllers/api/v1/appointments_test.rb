@@ -138,12 +138,15 @@ class AppointmentsRequestTest < ActionDispatch::IntegrationTest
       status: "confirmed"
     )
 
-    assert_enqueued_emails 1 do
+    assert_emails 1 do
       post "/api/v1/admin/appointments/#{appointment.id}/reschedule",
            headers: auth_headers(admin),
            as: :json
     end
     assert_response :success
+    body = JSON.parse(response.body)
+    assert_equal true, body["reschedule_sent"]
+    assert_equal "accepted_by_provider", body["email_status"]
 
     appointment.reload
     assert appointment.reschedule_token_valid?

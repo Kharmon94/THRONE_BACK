@@ -3,6 +3,9 @@
 module Api
   module V1
     class AppointmentsController < ApplicationController
+      SLOT_UNAVAILABLE = "Selected slot is no longer available"
+      INVALID_TOKEN = "Invalid or expired reschedule token"
+
       def slots
         from_time, to_time = parse_range_params
         return if performed?
@@ -17,34 +20,41 @@ module Api
         starts_at = parse_starts_at(appointment_params[:starts_at])
         return if performed?
 
-        settings = AppointmentSetting.instance
-        generator = Appointments::SlotGenerator.new(settings: settings)
-        unless generator.available?(starts_at)
-          render json: { errors: ["Selected slot is no longer available"] }, status: :unprocessable_entity
-          return
+        appointment = nil
+        slot_taken = false
+        Appointments::BookingLock.with_lock do |settings|
+          generator = Appointments::SlotGenerator.new(settings: settings)
+          unless generator.available?(starts_at)
+            slot_taken = true
+            raise ActiveRecord::Rollback
+          end
+
+          appointment = Appointment.new(
+            name: appointment_params[:name],
+            email: appointment_params[:email],
+            company: appointment_params[:company],
+            notes: appointment_params[:notes],
+            starts_at: starts_at,
+            duration_minutes: settings.slot_duration_minutes,
+            status: "pending"
+          )
+          raise ActiveRecord::Rollback unless appointment.save
         end
 
-        appointment = Appointment.new(
-          name: appointment_params[:name],
-          email: appointment_params[:email],
-          company: appointment_params[:company],
-          notes: appointment_params[:notes],
-          starts_at: starts_at,
-          duration_minutes: settings.slot_duration_minutes,
-          status: "pending"
-        )
-
-        if appointment.save
+        if slot_taken
+          render json: { errors: [SLOT_UNAVAILABLE] }, status: :unprocessable_entity
+        elsif appointment&.persisted?
           render json: { appointment: appointment_json(appointment) }, status: :created
         else
-          render json: { errors: appointment.errors.full_messages }, status: :unprocessable_entity
+          render json: { errors: appointment&.errors&.full_messages.presence || ["Could not book this slot"] },
+                 status: :unprocessable_entity
         end
       end
 
       def show_reschedule
         appointment = Appointment.find_by_valid_reschedule_token(params[:token])
         unless appointment
-          render json: { error: "Invalid or expired reschedule token" }, status: :not_found
+          render json: { error: INVALID_TOKEN }, status: :not_found
           return
         end
 
@@ -55,35 +65,58 @@ module Api
       end
 
       def update_reschedule
-        appointment = Appointment.find_by_valid_reschedule_token(params[:token])
-        unless appointment
-          render json: { error: "Invalid or expired reschedule token" }, status: :not_found
+        unless Appointment.find_by_valid_reschedule_token(params[:token])
+          render json: { error: INVALID_TOKEN }, status: :not_found
           return
         end
 
         starts_at = parse_starts_at(reschedule_params[:starts_at])
         return if performed?
 
-        settings = AppointmentSetting.instance
-        generator = Appointments::SlotGenerator.new(
-          settings: settings,
-          exclude_appointment_id: appointment.id
-        )
-        unless generator.available?(starts_at)
-          render json: { errors: ["Selected slot is no longer available"] }, status: :unprocessable_entity
-          return
+        outcome = nil
+        appointment = nil
+        Appointments::BookingLock.with_lock do |settings|
+          # Re-read under the lock so a token cannot be used twice concurrently and
+          # a booking declined/cancelled in the meantime cannot be revived.
+          appointment = Appointment.lock.find_by(reschedule_token: params[:token].to_s)
+          unless appointment&.reschedule_token_valid? && appointment.blocking?
+            outcome = :invalid_token
+            raise ActiveRecord::Rollback
+          end
+
+          generator = Appointments::SlotGenerator.new(
+            settings: settings,
+            exclude_appointment_id: appointment.id
+          )
+          unless generator.available?(starts_at)
+            outcome = :slot_taken
+            raise ActiveRecord::Rollback
+          end
+
+          if appointment.update(
+            starts_at: starts_at,
+            duration_minutes: settings.slot_duration_minutes,
+            status: "pending",
+            reschedule_token: nil,
+            reschedule_token_expires_at: nil
+          )
+            outcome = :ok
+          else
+            outcome = :invalid
+            raise ActiveRecord::Rollback
+          end
         end
 
-        if appointment.update(
-          starts_at: starts_at,
-          duration_minutes: settings.slot_duration_minutes,
-          status: "pending",
-          reschedule_token: nil,
-          reschedule_token_expires_at: nil
-        )
+        case outcome
+        when :ok
           render json: { appointment: appointment_json(appointment) }
+        when :invalid_token
+          render json: { error: INVALID_TOKEN }, status: :not_found
+        when :slot_taken
+          render json: { errors: [SLOT_UNAVAILABLE] }, status: :unprocessable_entity
         else
-          render json: { errors: appointment.errors.full_messages }, status: :unprocessable_entity
+          render json: { errors: appointment&.errors&.full_messages.presence || ["Could not reschedule"] },
+                 status: :unprocessable_entity
         end
       end
 

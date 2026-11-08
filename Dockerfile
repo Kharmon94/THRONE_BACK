@@ -13,7 +13,8 @@ COPY Gemfile Gemfile.lock ./
 RUN bundle install
 
 COPY . .
-RUN bundle exec rails assets:precompile 2>/dev/null || true
+# API-only app: no asset pipeline, so no assets:precompile step (the previous
+# "|| true" variant silently hid any boot error at build time).
 
 EXPOSE 3000
 

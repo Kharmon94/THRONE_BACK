@@ -33,11 +33,26 @@ bundle exec rails test
 - `API_HOST` - Public API hostname (no scheme) used for Active Storage URLs and host allowlisting
 - `RAILS_HOSTS` - Comma-separated extra hostnames allowed by Rails (e.g. Railway domain)
 - `ADMIN_SEED_EMAIL` / `ADMIN_SEED_PASSWORD` - Seed admin (`ADMIN_SEED_PASSWORD` required in production)
-- `ALLOW_PUBLIC_SIGN_UP` - Optional; when `true`, allows registration after the first user exists (default: only bootstrap when User.count is zero)
+- `ALLOW_PUBLIC_SIGN_UP` - Optional; when `true`, allows public registration of **non-admin** users. Default: sign-up is disabled. Admin rights are never granted over HTTP (see "Admin bootstrap").
+- `JWT_TTL_HOURS` - Optional admin session length in hours (default 12, clamped 1–72)
+- `JWT_REVOKED_BEFORE` - Optional ISO8601 time; every token issued before it is rejected (forces all admins to sign in again)
+- `TRUSTED_PROXIES` - Optional comma-separated CIDRs of reverse proxies to trust for client IP (rate limiting). Private ranges are trusted by default.
 - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_BUCKET` - **Required for durable media on Railway.** Without these, uploads use local disk and are lost on redeploy.
 - `RAILS_MASTER_KEY` - Alternative to SECRET_KEY_BASE (for credentials-based setup)
 - `RESEND_API_KEY` - Resend API key for appointment reschedule emails (required in production for mail delivery)
-- `MAILER_FROM` - From address for Action Mailer (e.g. `Throne <bookings@yourdomain.com>`; must be a verified Resend domain)
+- `MAILER_FROM` - From address for Action Mailer (e.g. `Throne <bookings@yourdomain.com>`; must be a verified Resend domain). Production logs a boot warning if unset.
+
+## Admin bootstrap
+
+Admins are created only by `db/seeds.rb` (ADMIN_SEED_EMAIL / ADMIN_SEED_PASSWORD) or the Rails console. `POST /api/v1/auth/sign_up` never grants admin and is disabled unless `ALLOW_PUBLIC_SIGN_UP=true`.
+
+## Email delivery
+
+Reschedule emails are sent synchronously. `reschedule_sent: true` / `email_status: "accepted_by_provider"` means Resend **accepted** the message; it does not confirm inbox delivery (no delivery webhooks are configured). On failure the API returns 502, `email_status: "failed"`, and the link is not issued.
+
+## Booking concurrency
+
+Booking and rescheduling take a row lock on the `appointment_settings` row (PostgreSQL `SELECT … FOR UPDATE`) so the availability check and save cannot interleave. No migration is required.
 
 ## Appointments
 
@@ -48,7 +63,7 @@ Public booking and admin management replace the old contact form.
 - `GET /api/v1/appointments/slots?from=&to=` — ISO8601 range; returns available slot starts
 - `POST /api/v1/appointments` — book a slot (`name`, `email`, optional `company`/`notes`, `starts_at`)
 - `GET /api/v1/appointments/reschedule/:token` — validate one-time reschedule token
-- `PATCH /api/v1/appointments/reschedule/:token` — pick a new `starts_at` (returns booking to `pending`)
+- `PATCH /api/v1/appointments/reschedule/:token` — pick a new `starts_at` (returns booking to `pending`; only for pending/confirmed bookings, single use)
 
 **Admin** (JWT + admin)
 

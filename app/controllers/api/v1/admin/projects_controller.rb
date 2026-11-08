@@ -136,10 +136,11 @@ module Api
           true
         rescue SafeRemoteImage::UnsafeUrlError => e
           Rails.logger.warn("Blocked unsafe image URL: #{e.message}")
-          project.errors.add(:image_url, "is not allowed")
+          project.errors.add(:image_url, "was rejected: #{e.message}")
           false
-        rescue Net::OpenTimeout, Net::ReadTimeout, Errno::ECONNREFUSED, SocketError, OpenSSL::SSL::SSLError => e
-          Rails.logger.warn("Failed to attach image from URL: #{e.message}")
+        rescue StandardError => e
+          # Timeouts, DNS/connection/TLS failures, truncated bodies, etc.
+          Rails.logger.warn("Failed to attach image from URL: #{e.class}")
           project.errors.add(:image_url, "could not be downloaded")
           false
         end

@@ -30,8 +30,23 @@ Rails.application.configure do
   end
   # In-process cache — enough for a single-replica portfolio API.
   config.cache_store = :memory_store
-  # Use :async (in-process) - no external queue needed. Add solid_queue gem if you need a real queue.
+  # :async (in-process) jobs are not durable. Nothing user-facing is enqueued:
+  # reschedule emails are sent synchronously (deliver_now) so failures are
+  # reported to the admin instead of being lost on restart.
   config.active_job.queue_adapter = :async
+
+  # Reverse proxies whose X-Forwarded-For entries should be trusted when
+  # computing request.remote_ip (used for rate limiting). Private ranges and
+  # loopback are trusted by default; add the platform edge ranges here if the
+  # proxy connects from a public or CGNAT address, e.g. TRUSTED_PROXIES=100.64.0.0/10
+  trusted = ENV.fetch("TRUSTED_PROXIES", "").split(",").map(&:strip).reject(&:empty?)
+  if trusted.any?
+    config.action_dispatch.trusted_proxies =
+      ActionDispatch::RemoteIp::TRUSTED_PROXIES + trusted.map { |cidr| IPAddr.new(cidr) }
+  end
+
+  # Host authorization: let the platform health check reach /up on any Host.
+  config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
   config.action_mailer.perform_caching = false
   config.action_mailer.delivery_method = :resend
   config.action_mailer.perform_deliveries = true

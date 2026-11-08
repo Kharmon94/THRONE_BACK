@@ -22,8 +22,10 @@ module Api
           return
         end
 
+        # Admin privileges are never granted over HTTP. Admins are created only via
+        # db/seeds.rb or the Rails console (see README "Admin bootstrap").
         user = User.new(sign_up_params)
-        user.admin = true if User.count.zero?
+        user.admin = false
         if user.save
           token = JwtService.encode({ user_id: user.id })
           render json: { token: token, user: user_json(user) }, status: :created
@@ -39,8 +41,10 @@ module Api
 
       private
 
+      # Public sign-up is off unless explicitly enabled. It used to open whenever the
+      # users table was empty, which let the first visitor of a fresh database claim admin.
       def public_sign_up_allowed?
-        ActiveModel::Type::Boolean.new.cast(ENV["ALLOW_PUBLIC_SIGN_UP"]) || User.count.zero?
+        ActiveModel::Type::Boolean.new.cast(ENV["ALLOW_PUBLIC_SIGN_UP"]) == true
       end
 
       def sign_up_params

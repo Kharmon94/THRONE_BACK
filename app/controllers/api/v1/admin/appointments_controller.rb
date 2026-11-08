@@ -40,13 +40,45 @@ module Api
           head :no_content
         end
 
+        # Mints a one-time reschedule link and emails it to the client.
+        #
+        # Delivery is synchronous (deliver_now) so the response reports what
+        # actually happened. The previous deliver_later + :async adapter returned
+        # "sent" even when the in-process job was lost on restart or Resend failed.
         def reschedule
           authorize! :update, @appointment
+          unless @appointment.blocking?
+            render json: {
+              errors: ["Only pending or confirmed appointments can be rescheduled (this one is #{@appointment.status})"]
+            }, status: :unprocessable_entity
+            return
+          end
+
           @appointment.mint_reschedule_token!
-          AppointmentMailer.with(appointment: @appointment).reschedule_instructions.deliver_later
+          begin
+            AppointmentMailer.with(appointment: @appointment).reschedule_instructions.deliver_now
+          rescue StandardError => e
+            Rails.logger.error(
+              "[appointments] reschedule email failed for appointment_id=#{@appointment.id}: #{e.class}"
+            )
+            @appointment.clear_reschedule_token!
+            render json: {
+              error: "The reschedule email could not be sent. No link was issued; please try again " \
+                     "or contact the client directly.",
+              reschedule_sent: false,
+              email_status: "failed",
+              appointment: appointment_json(@appointment.reload)
+            }, status: :bad_gateway
+            return
+          end
+
+          # "accepted" means the email provider accepted the message for delivery;
+          # it does not confirm it reached the client's inbox (no delivery webhooks).
           render json: {
             appointment: appointment_json(@appointment),
-            reschedule_sent: true
+            reschedule_sent: true,
+            email_status: "accepted_by_provider",
+            message: "Reschedule email accepted by the email provider for delivery."
           }
         end
 
