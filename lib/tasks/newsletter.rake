@@ -14,10 +14,9 @@ namespace :newsletter do
 
   desc "Delete never-confirmed pending signups older than NEWSLETTER_PENDING_RETENTION_DAYS"
   task purge_pending: :environment do
-    days = Newsletter::Config.pending_retention_days
-    abort "NEWSLETTER_PENDING_RETENTION_DAYS is not set to a positive integer; nothing deleted." unless days
+    n = Newsletter::Retention.purge_pending!
+    abort "NEWSLETTER_PENDING_RETENTION_DAYS is not set to a positive integer; nothing deleted." if n.nil?
 
-    n = NewsletterSubscriber.where(status: "pending").where("requested_at < ?", days.days.ago).delete_all
     puts "Deleted #{n} expired pending signup(s)."
   end
 end

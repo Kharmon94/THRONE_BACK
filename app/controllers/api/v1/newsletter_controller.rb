@@ -10,6 +10,8 @@ module Api
       NOT_AVAILABLE = { error: "Email updates aren't open yet." }.freeze
 
       before_action :require_signup_enabled, only: %i[create confirm]
+      # Enforce the pending-signup retention window on normal traffic (hourly at most).
+      after_action { Newsletter::Retention.maybe_purge! }
 
       # GET /api/v1/newsletter/config: public, no secrets or subscriber data.
       def public_config
