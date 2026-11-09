@@ -18,6 +18,18 @@ class Rack::Attack
     (req.env["action_dispatch.remote_ip"] || req.ip).to_s
   end
 
+  # Rack::Request#params does not parse JSON bodies; read a bounded prefix and rewind.
+  def self.json_body_param(req, key)
+    return unless req.media_type == "application/json" && req.body
+
+    raw = req.body.read(8192)
+    req.body.rewind
+    JSON.parse(raw.to_s)[key] if raw.present?
+  rescue JSON::ParserError, NoMethodError, TypeError
+    req.body&.rewind
+    nil
+  end
+
   safelist("allow health checks") do |req|
     req.path == "/up"
   end
@@ -52,6 +64,24 @@ class Rack::Attack
 
   throttle("appointments/slots", limit: 120, period: 5.minutes) do |req|
     client_ip(req) if req.path == "/api/v1/appointments/slots" && req.get?
+  end
+
+  # Newsletter: per-IP plus per-address caps so neither rotating IPs nor one IP
+  # can flood an inbox with confirmation requests.
+  throttle("newsletter/subscribe", limit: 5, period: 1.hour) do |req|
+    client_ip(req) if req.path == "/api/v1/newsletter/subscriptions" && req.post?
+  end
+
+  throttle("newsletter/subscribe/email", limit: 3, period: 1.day) do |req|
+    if req.path == "/api/v1/newsletter/subscriptions" && req.post?
+      email = req.params["email"].presence || json_body_param(req, "email")
+      email.to_s.strip.downcase.presence
+    end
+  end
+
+  throttle("newsletter/tokens", limit: 30, period: 10.minutes) do |req|
+    client_ip(req) if req.post? && req.path.start_with?("/api/v1/newsletter/") &&
+                      req.path != "/api/v1/newsletter/subscriptions"
   end
 
   self.throttled_responder = lambda do |_request|

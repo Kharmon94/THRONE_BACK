@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_13_000001) do
+ActiveRecord::Schema[8.0].define(version: 2026_11_08_000001) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -76,6 +76,29 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_13_000001) do
     t.index ["reschedule_token"], name: "index_appointments_on_reschedule_token", unique: true
     t.index ["starts_at"], name: "index_appointments_on_starts_at"
     t.index ["status"], name: "index_appointments_on_status"
+  end
+
+  create_table "newsletter_subscribers", force: :cascade do |t|
+    t.string "email", null: false
+    t.string "status", default: "pending", null: false
+    t.string "confirm_token_digest"
+    t.datetime "confirm_token_expires_at"
+    t.string "source"
+    t.string "campaign"
+    t.string "consent_version"
+    t.datetime "requested_at"
+    t.datetime "consented_at"
+    t.datetime "confirmed_at"
+    t.datetime "unsubscribed_at"
+    t.string "unsubscribe_method"
+    t.integer "confirmation_sent_count", default: 0, null: false
+    t.datetime "last_confirmation_sent_at"
+    t.string "last_confirmation_status"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["confirm_token_digest"], name: "index_newsletter_subscribers_on_confirm_token_digest", unique: true
+    t.index ["email"], name: "index_newsletter_subscribers_on_email", unique: true
+    t.index ["status"], name: "index_newsletter_subscribers_on_status"
   end
 
   create_table "projects", force: :cascade do |t|

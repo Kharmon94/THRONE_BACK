@@ -1,0 +1,10 @@
+Confirm your subscription to Throne Tech articles by email:
+
+<%= @confirm_url %>
+
+This link expires in <%= @expires_hours %> hours.
+
+If you didn't request this, ignore this email. You won't be subscribed.
+<% if @privacy_url.present? %>
+Privacy policy: <%= @privacy_url %>
+<% end %>

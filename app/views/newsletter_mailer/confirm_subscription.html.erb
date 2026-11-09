@@ -1,0 +1,7 @@
+<p>Confirm your subscription to Throne Tech articles by email.</p>
+<p><a href="<%= @confirm_url %>">Confirm subscription</a></p>
+<p>This link expires in <%= @expires_hours %> hours.</p>
+<p>If you didn't request this, ignore this email. You won't be subscribed.</p>
+<% if @privacy_url.present? %>
+<p><a href="<%= @privacy_url %>">Privacy policy</a></p>
+<% end %>

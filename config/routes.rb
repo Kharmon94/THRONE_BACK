@@ -15,6 +15,12 @@ Rails.application.routes.draw do
       get "appointments/reschedule/:token", to: "appointments#show_reschedule"
       patch "appointments/reschedule/:token", to: "appointments#update_reschedule"
 
+      get "newsletter/config", to: "newsletter#public_config"
+      post "newsletter/subscriptions", to: "newsletter#create"
+      post "newsletter/confirmations", to: "newsletter#confirm"
+      post "newsletter/unsubscribe", to: "newsletter#unsubscribe"
+      post "newsletter/unsubscribe/one_click", to: "newsletter#one_click"
+
       namespace :admin do
         resources :projects do
           collection do
